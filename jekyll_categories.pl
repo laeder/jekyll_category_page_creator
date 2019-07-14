@@ -9,10 +9,11 @@ my $dir = "_posts/";
 # Open the directory
 opendir my $dh, $dir or die "Could not open '$dir' for reading: $!\n";
 
+# Read the directory and put the filenames in the @files array
 my @files = readdir $dh;
 my @posts;
 
-# Put all files except . and .. in an array
+# Put all files except . and .. in the @posts array
 foreach my $file (@files) {
     if ($file eq '.' or $file eq '..') {
         next;
@@ -31,9 +32,10 @@ foreach my $post (@posts) {
     my $filename = $dir . $post;
     my $started = 0;
 
-    open(my $fh, '<:encoding(UTF-8)', $filename)
-      or die "Could not open file '$filename' $!";
+    # Open the file for reading
+    open(my $fh, '<:encoding(UTF-8)', $filename) or die "Could not open file '$filename' $!";
      
+    # For every row
     while (my $row = <$fh>) {
         chomp $row;
 
@@ -66,15 +68,15 @@ foreach my $post (@posts) {
 # create category files
 say "Categories:";
 while ((my $cat) = each (%categories)) {
-    say $cat;
-
     my $filename = "categories/" . lc $cat . ".html";
-    print " - " . $filename;
-    if (-e $filename) {
-        say " - File exists";
-    }
-    else {
-        say " - File does not exist";
+
+    # The category file does not exist
+    unless (-e $filename) {
+        say "  $cat";
+        print " - " . $filename;
+        say "  - File does not exist";
+
+        # Open the file for writing and write the frontmatter
         open(my $fh, '>', $filename);
         print $fh "---\n";
         print $fh "layout: category\n";
@@ -83,21 +85,22 @@ while ((my $cat) = each (%categories)) {
         print $fh "title: $cat\n";
         print $fh "---\n";
         close $fh;
-        say " - Created";
+        say "  - Created\n";
     }
 }
-say " ";
-say "Tags:";
+
+say "\nTags:";
 while ((my $tag) = each (%tags)) {
-    say $tag;
     my $filename = "tags/" . lc $tag . ".html";
     $filename =~ s/ /_/g;
-    print " - " . $filename;
-    if (-e $filename) {
-        say " - File exists";
-    }
-    else {
+
+    # The tag file does not exist
+    unless (-e $filename) {
+        say "  $tag";
+        print "  - " . $filename;
         say " - File does not exist";
+        
+        # Open the file for writing and write the frontmatter
         open(my $fh, '>', $filename);
         print $fh "---\n";
         print $fh "layout: tag\n";
@@ -106,9 +109,8 @@ while ((my $tag) = each (%tags)) {
         print $fh "title: $tag\n";
         print $fh "---\n";
         close $fh;
-        say " - Created";
+        say "  - Created\n";
     }
 }
 
-say " ";
-say "done\n";
+say "\nDone!\n";
