@@ -3,8 +3,26 @@
 use 5.014;
 use strict;
 
-my $dh;
+### Here we set a few variables ##########
+
+# Where are posts?
 my $dir = "_posts/";
+
+# Where to store category files?
+my $cat_dir = "categories/";
+
+# Where to store tag files?
+my $tag_dir = "tags/";
+
+# Permalink for categories?
+my $cat_per = "/categories"; # will look like /categories/Jekyll
+
+# Permalink for tags?
+my $tag_per = "/tags"; # will look like /tags/css
+
+##########################################
+
+my $dh;
 
 # Open the directory
 opendir my $dh, $dir or die "Could not open '$dir' for reading: $!\n";
@@ -26,6 +44,9 @@ closedir $dh;
 # A hash is better since I don't want duplicates
 my %categories;
 my %tags;
+my $cat_search = qr/^categor(y|ies): *(\[?[A-Za-z0-9, -]+\]?) */;
+my $tag_search = qr/^tags: *(\[?[A-Za-z, -]+\]?) */;
+my $reg_name = qr/\[(.*)\]/;
 
 # Read the files
 foreach my $post (@posts) {
@@ -46,16 +67,29 @@ foreach my $post (@posts) {
         }
 
         # categories
-        if ($row =~ m/^category: *\[([A-Za-z, -]+)\] */) {
-            my @cats = split /, */, $1;
+        if ($row =~ m/$cat_search/) {
+            my @cats;
+            if ($2 =~ m/$reg_name/) {
+                @cats = split /, */, $1;
+            }
+            else {
+                @cats = split / +/, $2;
+            }
+
             foreach my $cat (@cats) {
                 $categories{$cat}++;
             }
         }
 
         #tags
-        if ($row =~ m/^tags: *\[([A-Za-z, -]+)\] */) {
-            my @tags = split /, */, $1;
+        if ($row =~ m/$tag_search/) {
+            my @tags;
+            if ($1 =~ m/$reg_name/) {
+                @tags = split /, */, $1;
+            }
+            else {
+                @tags = split / +/, $1;
+            }
             foreach my $tag (@tags) {
                 $tags{$tag}++;
             }
@@ -68,7 +102,8 @@ foreach my $post (@posts) {
 # create category files
 say "Categories:";
 while ((my $cat) = each (%categories)) {
-    my $filename = "categories/" . lc $cat . ".html";
+    my $filename = $cat_dir . lc $cat . ".html";
+    $filename =~ s/ /_/g;
 
     # The category file does not exist
     unless (-e $filename) {
@@ -80,7 +115,7 @@ while ((my $cat) = each (%categories)) {
         open(my $fh, '>', $filename);
         print $fh "---\n";
         print $fh "layout: category\n";
-        print $fh "permalink: /categories/$cat/\n";
+        print $fh "permalink: $cat_per/" . $cat =~ s/ /_/r . "/\n";
         print $fh "category: $cat\n";
         print $fh "title: $cat\n";
         print $fh "---\n";
@@ -91,7 +126,7 @@ while ((my $cat) = each (%categories)) {
 
 say "\nTags:";
 while ((my $tag) = each (%tags)) {
-    my $filename = "tags/" . lc $tag . ".html";
+    my $filename = $tag_dir . lc $tag . ".html";
     $filename =~ s/ /_/g;
 
     # The tag file does not exist
@@ -104,7 +139,7 @@ while ((my $tag) = each (%tags)) {
         open(my $fh, '>', $filename);
         print $fh "---\n";
         print $fh "layout: tag\n";
-        print $fh "permalink: /tags/" . $tag =~ s/ /_/r . "/\n";
+        print $fh "permalink: $tag_per/" . $tag =~ s/ /_/r . "/\n";
         print $fh "tag: $tag\n";
         print $fh "title: $tag\n";
         print $fh "---\n";
